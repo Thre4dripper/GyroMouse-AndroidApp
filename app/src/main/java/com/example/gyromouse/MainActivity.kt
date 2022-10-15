@@ -6,13 +6,17 @@ import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.view.LayoutInflater
 import android.widget.Toast
 import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.ViewModelProvider
 import com.example.gyromouse.databinding.ActivityMainBinding
+import com.example.gyromouse.databinding.IpDialogLayoutBinding
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import java.io.BufferedWriter
 import java.io.OutputStreamWriter
 import java.net.Socket
+import kotlin.math.atan2
 
 class MainActivity : AppCompatActivity(), SensorEventListener {
     private val TAG = "MainActivity"
@@ -37,12 +41,30 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
 
         viewModel = ViewModelProvider(this)[MainViewModel::class.java]
 
-        connectToServer("192.168.0.102")
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
         accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
         magnetometer = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)
+        getIp()
+    }
 
-        setGyroListener()
+    private fun getIp() {
+        //custom dialog layout
+        val dialogBinding = DataBindingUtil.inflate<IpDialogLayoutBinding>(
+            LayoutInflater.from(this), R.layout.ip_dialog_layout, null, false
+        )
+        dialogBinding.ipEditText.setText(viewModel.ip)
+        // Create an alert dialog to get ip from user
+        MaterialAlertDialogBuilder(this).setTitle("Enter IP").setView(dialogBinding.root)
+            .setPositiveButton("Connect") { _, _ ->
+                val ip = dialogBinding.ipEditText.text.toString()
+                viewModel.ip = ip
+
+                //now start socket connection
+                connectToServer(ip)
+
+            }.setNegativeButton("Exit") { _, _ ->
+                finish()
+            }.setCancelable(false).show()
     }
 
     private fun connectToServer(ip: String) {
@@ -69,10 +91,6 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         socketThread.start()
     }
 
-    private fun setGyroListener() {
-
-    }
-
     override fun onStop() {
         super.onStop()
         viewModel.socket!!.close()
@@ -83,8 +101,8 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         super.onResume()
         lastAccelerometerSet = false
         lastMagnetometerSet = false
-        sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_GAME)
-        sensorManager.registerListener(this, magnetometer, SensorManager.SENSOR_DELAY_GAME)
+        sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_FASTEST)
+        sensorManager.registerListener(this, magnetometer, SensorManager.SENSOR_DELAY_FASTEST)
     }
 
     override fun onPause() {
@@ -102,14 +120,29 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         }
 
         if (lastAccelerometerSet && lastMagnetometerSet) {
-            SensorManager.getRotationMatrix(rotationMatrix, null, lastAccelerometer, lastMagnetometer)
+            SensorManager.getRotationMatrix(
+                rotationMatrix, null, lastAccelerometer, lastMagnetometer
+            )
             SensorManager.getOrientation(rotationMatrix, orientation)
 
-            val azimuth = Math.toDegrees(orientation[0].toDouble()).toInt()
-            val pitch = Math.toDegrees(orientation[1].toDouble()).toInt()
-            val roll = Math.toDegrees(orientation[2].toDouble()).toInt()
+            val azimuth = Math.toDegrees(orientation[0].toDouble()).toFloat()
+            val pitch = Math.toDegrees(orientation[1].toDouble()).toFloat()
+            val roll = Math.toDegrees(orientation[2].toDouble()).toFloat()
 
-            binding.textView.text = "Azimuth: $azimuth Pitch: $pitch Roll: $roll"
+            if (!viewModel.calibrate) {
+                viewModel.initAzimuth = azimuth
+                viewModel.initPitch = pitch
+                viewModel.calibrate = true
+            }
+
+
+            viewModel.azimuth = azimuth - viewModel.initAzimuth
+            viewModel.pitch = pitch - viewModel.initPitch
+
+            viewModel.dx = (viewModel.azimuth).toInt()/6
+            viewModel.dy = (viewModel.pitch).toInt()/6
+
+            binding.textView.text = "dx: ${viewModel.dx} dy: ${viewModel.dy}"
         }
     }
 
