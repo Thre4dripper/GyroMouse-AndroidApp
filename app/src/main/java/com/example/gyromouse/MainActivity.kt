@@ -47,6 +47,9 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         getIp()
     }
 
+    /**
+     * METHOD FOR GETTING IP FROM USER VIA DIALOG
+     */
     private fun getIp() {
         //custom dialog layout
         val dialogBinding = DataBindingUtil.inflate<IpDialogLayoutBinding>(
@@ -62,15 +65,13 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                 //now start socket connection
                 connectToServer(ip)
                 setMouseButtons()
+
+                //register sensor listeners
                 sensorManager.registerListener(
-                    this,
-                    accelerometer,
-                    SensorManager.SENSOR_DELAY_FASTEST
+                    this, accelerometer, SensorManager.SENSOR_DELAY_FASTEST
                 )
                 sensorManager.registerListener(
-                    this,
-                    magnetometer,
-                    SensorManager.SENSOR_DELAY_FASTEST
+                    this, magnetometer, SensorManager.SENSOR_DELAY_FASTEST
                 )
 
             }.setNegativeButton("Exit") { _, _ ->
@@ -90,6 +91,8 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                     BufferedWriter(OutputStreamWriter(viewModel.socket!!.getOutputStream()))
 
                 viewModel.event = "move"
+
+                //start sending data to server on diff thread
                 viewModel.sendData()
             } catch (e: Exception) {
                 runOnUiThread {
@@ -102,6 +105,9 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         socketThread.start()
     }
 
+    /**
+     * SOCKET AND SENSORS WILL BE CLOSED WHEN USER LEAVES THE APP
+     */
     override fun onStop() {
         super.onStop()
         viewModel.socket!!.close()
@@ -119,6 +125,9 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         sensorManager.unregisterListener(this)
     }
 
+    /**
+     * OVERRIDE SENSOR LISTENER METHODS FOR CALCULATING MOUSE MOVEMENT
+     */
     override fun onSensorChanged(p0: SensorEvent?) {
         if (p0!!.sensor == accelerometer) {
             System.arraycopy(p0.values, 0, lastAccelerometer, 0, p0.values.size)
@@ -136,7 +145,6 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
 
             val azimuth = Math.toDegrees(orientation[0].toDouble()).toFloat()
             val pitch = Math.toDegrees(orientation[1].toDouble()).toFloat()
-            val roll = Math.toDegrees(orientation[2].toDouble()).toFloat()
 
             if (!viewModel.calibrate) {
                 viewModel.initAzimuth = azimuth
@@ -144,17 +152,19 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
                 viewModel.calibrate = true
             }
 
-
             viewModel.azimuth = azimuth - viewModel.initAzimuth
             viewModel.pitch = pitch - viewModel.initPitch
 
-            viewModel.dx = (viewModel.azimuth*15).toInt()
-            viewModel.dy = (viewModel.pitch*15).toInt()
+            viewModel.dx = (viewModel.azimuth * 15).toInt()
+            viewModel.dy = (viewModel.pitch * 15).toInt()
 
-            binding.textView.text = "dx: ${960+viewModel.dx} dy: ${540+viewModel.dy}"
+            binding.textView.text = "dx: ${960 + viewModel.dx} dy: ${540 + viewModel.dy}"
         }
     }
 
+    /**
+     * METHOD FOR SETTING MOUSE BUTTONS
+     */
     private fun setMouseButtons() {
         binding.leftClick.setOnClickListener {
             viewModel.sendLeftClick()

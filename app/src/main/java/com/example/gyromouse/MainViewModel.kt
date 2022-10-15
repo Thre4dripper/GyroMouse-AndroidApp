@@ -8,8 +8,6 @@ class MainViewModel : ViewModel() {
     var ip: String = ""
     var socket: Socket? = null
     var writer: BufferedWriter? = null
-    var x = 0
-    var y = 0
     var dx = 0
     var dy = 0
     var initAzimuth = 0f
@@ -19,10 +17,11 @@ class MainViewModel : ViewModel() {
     var event = ""
     var calibrate = false
 
-
+    /**
+     * METHOD FOR SENDING DATA TO SERVER VIA SOCKET AT EVERY 3ms
+     */
     fun sendData() {
         while (socket!!.isConnected) {
-
 
             writer!!.write("$event $dx $dy")
             writer!!.newLine()
@@ -32,20 +31,30 @@ class MainViewModel : ViewModel() {
         }
     }
 
+    /**
+     * METHOD FOR SENDING LEFT CLICK EVENT TO SERVER
+     */
     fun sendLeftClick() {
         Thread {
             writer!!.write("leftClick $dx $dy")
             writer!!.newLine()
             writer!!.flush()
+
+            //terminate the thread after sending the data
             Thread.currentThread().join()
         }.start()
     }
 
+    /**
+     * METHOD FOR SENDING RIGHT CLICK EVENT TO SERVER
+     */
     fun sendRightClick() {
         Thread {
             writer!!.write("rightClick $dx $dy")
             writer!!.newLine()
             writer!!.flush()
+
+            //terminate the thread after sending the data
             Thread.currentThread().join()
         }.start()
     }
