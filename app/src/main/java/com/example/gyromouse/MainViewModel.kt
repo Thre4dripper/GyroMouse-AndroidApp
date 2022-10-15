@@ -18,7 +18,6 @@ class MainViewModel : ViewModel() {
     var pitch = 0f
     var event = ""
     var calibrate = false
-    var threshold = 3
 
 
     fun sendData() {

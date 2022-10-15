@@ -51,16 +51,13 @@ public class Server {
         try {
             Robot robot = new Robot();
             if (Objects.equals(action, "move")) {
-                robot.mouseMove(x + dx, y + dy);
+                robot.mouseMove(960+dx, 540+dy);
             } else if (Objects.equals(action, "leftClick")) {
                 robot.mousePress(InputEvent.BUTTON1_DOWN_MASK);
                 robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK);
             } else if (Objects.equals(action, "rightClick")) {
                 robot.mousePress(InputEvent.BUTTON3_DOWN_MASK);
                 robot.mouseRelease(InputEvent.BUTTON3_DOWN_MASK);
-            } else if (Objects.equals(action, "up")) {
-                if (x + dx >= 0 && x + dx <= 1920) x += dx;
-                if (y + dy >= 0 && y + dy <= 1080) y += dy;
             }
 
         } catch (Exception e) {

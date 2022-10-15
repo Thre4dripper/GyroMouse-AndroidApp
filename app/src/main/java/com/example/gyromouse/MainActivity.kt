@@ -61,6 +61,17 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
 
                 //now start socket connection
                 connectToServer(ip)
+                setMouseButtons()
+                sensorManager.registerListener(
+                    this,
+                    accelerometer,
+                    SensorManager.SENSOR_DELAY_FASTEST
+                )
+                sensorManager.registerListener(
+                    this,
+                    magnetometer,
+                    SensorManager.SENSOR_DELAY_FASTEST
+                )
 
             }.setNegativeButton("Exit") { _, _ ->
                 finish()
@@ -101,8 +112,6 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         super.onResume()
         lastAccelerometerSet = false
         lastMagnetometerSet = false
-        sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_FASTEST)
-        sensorManager.registerListener(this, magnetometer, SensorManager.SENSOR_DELAY_FASTEST)
     }
 
     override fun onPause() {
@@ -139,10 +148,19 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
             viewModel.azimuth = azimuth - viewModel.initAzimuth
             viewModel.pitch = pitch - viewModel.initPitch
 
-            viewModel.dx = (viewModel.azimuth).toInt()/6
-            viewModel.dy = (viewModel.pitch).toInt()/6
+            viewModel.dx = (viewModel.azimuth*15).toInt()
+            viewModel.dy = (viewModel.pitch*15).toInt()
 
-            binding.textView.text = "dx: ${viewModel.dx} dy: ${viewModel.dy}"
+            binding.textView.text = "dx: ${960+viewModel.dx} dy: ${540+viewModel.dy}"
+        }
+    }
+
+    private fun setMouseButtons() {
+        binding.leftClick.setOnClickListener {
+            viewModel.sendLeftClick()
+        }
+        binding.rightClick.setOnClickListener {
+            viewModel.sendRightClick()
         }
     }
 
